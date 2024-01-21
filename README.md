@@ -2,12 +2,6 @@
 
 A Typescript function that fixes problems `JSON.parse()` cannot solve for OpenAI's v3 and v4 API output.
 
-## How does it work?
-
-- Extract JSON values as a string using a special regex (add delimiters to ```key``` to make ```###key###```) to split keys and values
-- By default, uses ```ast.literal_eval``` to best match the string to a literal (e.g. int, string, dict). Set ```literal_eval = False``` when calling ```json_gpt``` to preserve output fields as string
-- Ensures that all JSON fields are output by LLM, if not it will feed in error message to LLM to iteratively correct its generation (default: 3 tries)
-
 ## Basic Generation
 
 ### Syntax
@@ -22,7 +16,7 @@ function json_gpt(system_prompt, user_prompt output_format) {
 - **user_prompt**: The user input. Later, when we use it as a function, this is the function input.
 - **output_format**: JSON of output variables in a dictionary, with the key as the output key, and the value as the output description.
   - The output keys will be preserved exactly, while GPT will generate content to match the description of the value as best as possible.
-- **output**: A String in object literal format. Use `JSON.parse(output)` to convert output to JSON.
+- **output**: An object Literal. Use `JSON.parse(output)` to convert output to JSON.
 
 ### Example Usage
 
