@@ -56,3 +56,7 @@ print(res)
 ```'C': 'int func_sum(int p[], int size) {\n    int sum = 0;\n    for (int i = 0; i < size; i++) {\n        sum += p[i];\n    }\n    return sum;\n}', ```
 
 ```'Python': 'def func_sum(p):\n    sum = 0\n    for num in p:\n        sum += num\n    return sum'}```
+
+## Contribution
+
+Feel free to open an issue if you spot a bug. All contributions are welcome!
