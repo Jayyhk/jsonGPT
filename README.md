@@ -64,20 +64,15 @@ console.log(res);
 ### Example Usage
 
 ```typescript
-const res = await json_gpt(
-  "You are a code generator",
-  "Given array p, output a function named func_sum to return its sum",
-  {
-    Elaboration: "How you would do it",
-    C: "Code",
-    Python: "Code"
-  }
-);
-
-console.log(res);
+res = json_gpt(system_prompt = 'You are a code generator, generating code to fulfil a task',
+                    user_prompt = 'Given array p, output a function named func_sum to return its sum',
+                    output_format = {'Elaboration': 'How you would do it',
+                                     'C': 'Code',
+                                    'Python': 'Code'})
+                                    
+print(res)
 ```
-
-#### Example Output
+#### Example output
 
 ```json
 {
