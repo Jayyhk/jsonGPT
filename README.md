@@ -1,58 +1,87 @@
 # jsonGPT
 
-A Typescript function that fixes problems `JSON.parse()` cannot solve for OpenAI's v3 and v4 API output.
+A TypeScript function that handles JSON generation from OpenAI's API output, addressing issues `JSON.parse()` might not solve.
 
 ## Basic Generation
 
 ### Syntax
 
 ```typescript
-function json_gpt(system_prompt, user_prompt output_format) {
-  return output
-}
+function json_gpt(
+  system_prompt: string,
+  user_prompt: string | string[],
+  output_format: OutputFormat,
+  default_category?: string,
+  output_value_only?: boolean,
+  model?: string,
+  temperature?: number,
+  num_tries?: number,
+  verbose?: boolean
+): Promise<any>;
 ```
 
-- **system_prompt**: Write in whatever you want the LLM to become. "You are a \<purpose in life\>".
-- **user_prompt**: The user input. Later, when we use it as a function, this is the function input.
-- **output_format**: JSON of output variables in a dictionary, with the key as the output key, and the value as the output description.
-  - The output keys will be preserved exactly, while GPT will generate content to match the description of the value as best as possible.
-- **output**: An object Literal. Use `JSON.parse(output)` to convert output to JSON.
+- **system_prompt**: A description for the assistant. Example: "You are a \<purpose in life\>".
+- **user_prompt**: User input, which can be a string or an array of strings.
+- **output_format**: A JSON object defining the expected output format.
+  - Keys are output labels, and values describe the expected output.
+- **default_category**: (Optional) A fallback category for list outputs.
+- **output_value_only**: (Optional) If `true`, the output only includes values, not keys.
+- **model**: (Optional) OpenAI model name (default: `"gpt-4o"`).
+- **temperature**: (Optional) Sampling temperature for randomness (default: `1`).
+- **num_tries**: (Optional) Number of attempts to get a valid JSON response (default: `3`).
+- **verbose**: (Optional) If `true`, logs system and user prompts as well as responses.
 
 ### Example Usage
 
 ```typescript
-res = json_gpt(system_prompt = 'You are a classifier',
-                    user_prompt = 'It is a beautiful and sunny day',
-                    output_format = {'Sentiment': 'Type of Sentiment',
-                                    'Adjectives': 'List of adjectives',
-                                    'Words': 'Number of words'})
-                                    
-print(res)
+const res = await json_gpt(
+  "You are a classifier",
+  "It is a beautiful and sunny day",
+  {
+    Sentiment: "Type of Sentiment",
+    Adjectives: "List of adjectives",
+    Words: "Number of words"
+  }
+);
+
+console.log(res);
 ```
 
 #### Example Output
 
-```{'Sentiment': 'positive', 'Adjectives': ['beautiful', 'sunny'], 'Words': 7}```
+```json
+{
+  "Sentiment": "positive",
+  "Adjectives": ["beautiful", "sunny"],
+  "Words": 7
+}
+```
 
 ## Advanced Generation
 
-- More advanced demonstration involving code that would typically break `JSON.parse()`
+- Demonstrates generating structured outputs like code or multi-format text.
 
 ### Example Usage
 
 ```typescript
-res = json_gpt(system_prompt = 'You are a code generator, generating code to fulfil a task',
-                    user_prompt = 'Given array p, output a function named func_sum to return its sum',
-                    output_format = {'Elaboration': 'How you would do it',
-                                     'C': 'Code',
-                                    'Python': 'Code'})
-                                    
-print(res)
+const res = await json_gpt(
+  "You are a code generator",
+  "Given array p, output a function named func_sum to return its sum",
+  {
+    Elaboration: "How you would do it",
+    C: "Code",
+    Python: "Code"
+  }
+);
+
+console.log(res);
 ```
-#### Example output
 
-```{'Elaboration': 'To calculate the sum of an array, we can iterate through each element of the array and add it to a running total.', ```
+#### Example Output
 
-```'C': 'int func_sum(int p[], int size) {\n    int sum = 0;\n    for (int i = 0; i < size; i++) {\n        sum += p[i];\n    }\n    return sum;\n}', ```
-
-```'Python': 'def func_sum(p):\n    sum = 0\n    for num in p:\n        sum += num\n    return sum'}```
+```json
+{
+  "Elaboration": "To calculate the sum of an array, iterate through each element and add it to a running total.",
+  "C": "int func_sum(int p[], int size) {\n    int sum = 0;\n    for (int i = 0; i < size; i++) {\n        sum += p[i];\n    }\n    return sum;\n}",
+  "Python": "def func_sum(p):\n    sum = 0\n    for num in p:\n        sum += num\n    return sum"
+}
