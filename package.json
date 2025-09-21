@@ -1,0 +1,28 @@
+{
+  "name": "jsongpt",
+  "version": "1.0.0",
+  "description": "A TypeScript library for structured JSON output using OpenAI GPT models",
+  "main": "dist/jsonGPT.js",
+  "types": "dist/jsonGPT.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "openai",
+    "gpt",
+    "json",
+    "typescript",
+    "ai"
+  ],
+  "author": "Jayyhk",
+  "license": "MIT",
+  "dependencies": {
+    "openai": "^5.22.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "@types/node": "^24.5.2"
+  }
+}

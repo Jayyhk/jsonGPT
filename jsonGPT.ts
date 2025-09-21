@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 
 const openai = new OpenAI({
-  apiKey: "OPENAI_API_KEY"
+  apiKey: "OPENAI_API_KEY",
 });
 
 interface OutputFormat {
@@ -31,7 +31,7 @@ export async function json_gpt(
 
   for (let i = 0; i < num_tries; i++) {
     let output_format_prompt = `\nYou are to output ${
-      list_output && "an array of objects in"
+      list_output ? "an array of objects in" : ""
     } the following in JSON format: ${JSON.stringify(output_format)}.`;
 
     if (list_output) {
@@ -58,11 +58,17 @@ export async function json_gpt(
             role: "system",
             content: system_prompt + output_format_prompt + error_msg,
           },
-          { role: "user", content: Array.isArray(user_prompt) ? user_prompt.join("\n") : user_prompt },
+          {
+            role: "user",
+            content: Array.isArray(user_prompt)
+              ? user_prompt.join("\n")
+              : user_prompt,
+          },
         ],
       });
 
-      let res: string = response.choices[0].message?.content?.replace(/'/g, '"') ?? "";
+      let res: string =
+        response.choices[0].message?.content?.replace(/'/g, '"') ?? "";
 
       // ensure that we don't replace away apostrophes in text
       res = res.replace(/(\w)"(\w)/g, "$1'$2");
@@ -84,8 +90,8 @@ export async function json_gpt(
       }
 
       const processedOutput = Array.isArray(output) ? output : [output];
-      for (let i = 0; i < processedOutput.length; i++) {
-        const obj = processedOutput[i];
+      for (let j = 0; j < processedOutput.length; j++) {
+        const obj = processedOutput[j];
         for (const key in output_format) {
           // unable to ensure accuracy of dynamic output header, so skip it
           if (/<.*?>/.test(key)) continue;
@@ -116,18 +122,18 @@ export async function json_gpt(
         // if we just want the values for the outputs
         if (output_value_only) {
           const values = Object.values(obj);
-          processedOutput[i] = values.length === 1 ? values[0] : values;
+          processedOutput[j] = values.length === 1 ? values[0] : values;
         }
       }
 
       return list_input ? processedOutput : processedOutput[0];
     } catch (e) {
-      error_msg = `\n\nResult: ${error_msg}\n\nError message: ${e}`;
+      error_msg = `\n\nPrevious attempt failed with error: ${e}`;
       if (verbose) {
         console.error("Error encountered:", e);
       }
     }
   }
 
-  return [];
+  return list_input ? [] : null;
 }
