@@ -1,11 +1,40 @@
 import OpenAI from "openai";
 
 const openai = new OpenAI({
-  apiKey: "OPENAI_API_KEY",
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 interface OutputFormat {
   [key: string]: string | string[] | OutputFormat;
+}
+
+function convertToJsonSchema(obj: OutputFormat): any {
+  const schema: any = {
+    type: "object",
+    properties: {},
+    required: [],
+    additionalProperties: false,
+  };
+  for (const key in obj) {
+    const value = obj[key];
+    if (typeof value === "string") {
+      if (value === "string") {
+        schema.properties[key] = { type: "string" };
+      } else if (value === "number") {
+        schema.properties[key] = { type: "number" };
+      } else if (value === "boolean") {
+        schema.properties[key] = { type: "boolean" };
+      } else {
+        schema.properties[key] = { type: "string" };
+      }
+    } else if (Array.isArray(value)) {
+      schema.properties[key] = { type: "string", enum: value };
+    } else if (typeof value === "object") {
+      schema.properties[key] = convertToJsonSchema(value);
+    }
+    schema.required.push(key);
+  }
+  return schema;
 }
 
 export async function json_gpt(
@@ -14,7 +43,7 @@ export async function json_gpt(
   output_format: OutputFormat,
   default_category: string = "",
   output_value_only: boolean = false,
-  model: string = "gpt-4o",
+  model: string = "gpt-5-mini",
   temperature: number = 1,
   num_tries: number = 3,
   verbose: boolean = false
@@ -49,77 +78,76 @@ export async function json_gpt(
     }
 
     try {
-      // Use OpenAI to get a response
-      const response = await openai.chat.completions.create({
+      // Prepare instructions and input
+      const instructions = system_prompt + output_format_prompt + error_msg;
+      const inputItems = list_input
+        ? (user_prompt as string[]).map((content: string) => ({
+            role: "user" as const,
+            content,
+          }))
+        : [{ role: "user" as const, content: user_prompt as string }];
+
+      // Prepare schema
+      const baseSchema = convertToJsonSchema(output_format);
+      const jsonSchema = list_input
+        ? { type: "array", items: baseSchema }
+        : baseSchema;
+
+      // Use OpenAI Responses API
+      const response = await openai.responses.create({
         model,
+        instructions,
+        input: inputItems,
         temperature,
-        messages: [
-          {
-            role: "system",
-            content: system_prompt + output_format_prompt + error_msg,
+        text: {
+          format: {
+            type: "json_schema",
+            name: "json_output",
+            strict: true,
+            schema: jsonSchema,
           },
-          {
-            role: "user",
-            content: Array.isArray(user_prompt)
-              ? user_prompt.join("\n")
-              : user_prompt,
-          },
-        ],
+        },
       });
 
-      let res: string =
-        response.choices[0].message?.content?.replace(/'/g, '"') ?? "";
-
-      // ensure that we don't replace away apostrophes in text
-      res = res.replace(/(\w)"(\w)/g, "$1'$2");
+      let res: string = response.output_text ?? "";
 
       if (verbose) {
-        console.log(
-          "System prompt:",
-          system_prompt + output_format_prompt + error_msg
-        );
-        console.log("\nUser prompt:", user_prompt);
+        console.log("Instructions:", instructions);
+        console.log("\nInput:", inputItems);
         console.log("\nGPT response:", res);
       }
 
-      // try-catch block to ensure output format is adhered to
+      // Parse the JSON output (guaranteed valid by structured outputs)
       const output: any = JSON.parse(res);
-
-      if (list_input && !Array.isArray(output)) {
-        throw new Error("Output format not in an array of JSON");
-      }
 
       const processedOutput = Array.isArray(output) ? output : [output];
       for (let j = 0; j < processedOutput.length; j++) {
         const obj = processedOutput[j];
+
+        // Process enum fields and apply defaults
         for (const key in output_format) {
-          // unable to ensure accuracy of dynamic output header, so skip it
+          // Skip dynamic elements
           if (/<.*?>/.test(key)) continue;
 
-          // if output field missing, raise an error
-          if (!(key in obj)) {
-            throw new Error(`${key} not in JSON output`);
-          }
-
-          // check that one of the choices given for the list of words is an unknown
+          // For enum fields, ensure output is not a list and apply defaults
           if (Array.isArray(output_format[key])) {
             const choices = output_format[key] as string[];
-            // ensure output is not a list
+            // Ensure output is not a list
             if (Array.isArray(obj[key])) {
               obj[key] = obj[key][0];
             }
-            // output the default category (if any) if GPT is unable to identify the category
+            // Apply default category if output not in choices
             if (!choices.includes(obj[key]) && default_category) {
               obj[key] = default_category;
             }
-            // if the output is a description format, get only the label
+            // Extract label from description format
             if (typeof obj[key] === "string" && obj[key].includes(":")) {
               obj[key] = obj[key].split(":")[0];
             }
           }
         }
 
-        // if we just want the values for the outputs
+        // If we just want the values for the outputs
         if (output_value_only) {
           const values = Object.values(obj);
           processedOutput[j] = values.length === 1 ? values[0] : values;

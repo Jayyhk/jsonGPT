@@ -19,7 +19,7 @@
   "author": "Jayyhk",
   "license": "MIT",
   "dependencies": {
-    "openai": "^5.22.0"
+    "openai": "^6.15.0"
   },
   "devDependencies": {
     "typescript": "^5.9.2",

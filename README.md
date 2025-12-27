@@ -1,6 +1,19 @@
 # jsonGPT
 
-A TypeScript function that handles JSON generation from OpenAI's API output, addressing issues `JSON.parse()` might not solve.
+A TypeScript library for generating structured JSON responses from OpenAI models. Define your output format simply, and get reliable, validated JSON without handling schemas or retries manually.
+
+## Installation
+
+```bash
+npm install
+npm run build
+```
+
+Set your OpenAI API key by creating a `.env` file in your project root (the library reads from the `OPENAI_API_KEY` environment variable):
+
+```
+OPENAI_API_KEY=your-api-key-here
+```
 
 ## Basic Generation
 
@@ -22,11 +35,10 @@ function json_gpt(
 
 - **system_prompt**: A description for the assistant. Example: "You are a \<purpose in life\>".
 - **user_prompt**: User input, which can be a string or an array of strings.
-- **output_format**: A JSON object defining the expected output format.
-  - Keys are output labels, and values describe the expected output.
+- **output_format**: A JSON object defining the expected output format. Use simple type strings ("string", "number", "boolean") or arrays for enums. Example: `{name: "string", age: "number", category: ["red", "blue"]}`. Automatically converted to JSON Schema for the API.
 - **default_category**: (Optional) A fallback category for list outputs.
 - **output_value_only**: (Optional) If `true`, the output only includes values, not keys.
-- **model**: (Optional) OpenAI model name (default: `"gpt-4o"`).
+- **model**: (Optional) OpenAI model name (default: `"gpt-5-mini"`).
 - **temperature**: (Optional) Sampling temperature for randomness (default: `1`).
 - **num_tries**: (Optional) Number of attempts to get a valid JSON response (default: `3`).
 - **verbose**: (Optional) If `true`, logs system and user prompts as well as responses.
@@ -38,9 +50,9 @@ const res = await json_gpt(
   "You are a classifier",
   "It is a beautiful and sunny day",
   {
-    Sentiment: "Type of Sentiment",
-    Adjectives: "List of adjectives",
-    Words: "Number of words"
+    Sentiment: "string",
+    Adjectives: ["positive", "negative", "neutral"],
+    Words: "number",
   }
 );
 
@@ -52,7 +64,7 @@ console.log(res);
 ```json
 {
   "Sentiment": "positive",
-  "Adjectives": ["beautiful", "sunny"],
+  "Adjectives": "positive",
   "Words": 7
 }
 ```
@@ -64,14 +76,19 @@ console.log(res);
 ### Example Usage
 
 ```typescript
-res = json_gpt(system_prompt = 'You are a code generator, generating code to fulfil a task',
-                    user_prompt = 'Given array p, output a function named func_sum to return its sum',
-                    output_format = {'Elaboration': 'How you would do it',
-                                     'C': 'Code',
-                                    'Python': 'Code'})
-                                    
-print(res)
+const res = await json_gpt(
+  "You are a code generator, generating code to fulfil a task",
+  "Given array p, output a function named func_sum to return its sum",
+  {
+    Elaboration: "string",
+    C: "string",
+    Python: "string",
+  }
+);
+
+console.log(res);
 ```
+
 #### Example output
 
 ```json
@@ -81,7 +98,3 @@ print(res)
   "Python": "def func_sum(p):\n    sum = 0\n    for num in p:\n        sum += num\n    return sum"
 }
 ```
-
-## Contribution
-
-Feel free to open an issue if you spot a bug. All contributions are welcome!
